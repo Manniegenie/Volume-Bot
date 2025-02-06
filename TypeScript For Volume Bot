@@ -1,0 +1,111 @@
+// volume-bot.ts
+
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
+import BN from 'bn.js';
+
+// --- CONFIGURATION --- //
+const RPC_ENDPOINT = "https://api.mainnet-beta.solana.com"; // or a testnet endpoint if testing
+const connection = new Connection(RPC_ENDPOINT, "confirmed");
+
+// Your wallet's secret key (replace with your own secure method for key management)
+const secretKey = Uint8Array.from([
+  // 64 numbers go here...
+]);
+const payer = Keypair.fromSecretKey(secretKey);
+
+// Raydium pool and token details (replace with your actual values)
+const RAYDIUM_POOL_ADDRESS = new PublicKey("YOUR_RAYDIUM_POOL_ADDRESS_HERE");
+const RAYDIUM_AMM_PROGRAM_ID = new PublicKey("675kPX9MHTjS2zt1qfr1NYHuqyqX9b7L8KrfT3VjY1Ne"); // example for mainnet
+const MEMECOIN_MINT = new PublicKey("YOUR_MEMECOIN_MINT_ADDRESS_HERE");
+const USDC_MINT = new PublicKey("YOUR_USDC_MINT_ADDRESS_HERE");
+
+// Target market cap (in USD) for your memecoin, for example:
+const TARGET_MARKET_CAP = 1000000; // e.g., $1,000,000
+
+// Specific order amounts for each swap (adjust as needed)
+const BUY_ORDER_USDC_AMOUNT = 500; // amount in USDC to swap for memecoin
+const SELL_ORDER_MEME_AMOUNT = 1000; // amount in memecoin to swap for USDC
+
+// --- PLACEHOLDER/HELPER FUNCTIONS --- //
+
+// Function to load Raydium pool info (this should decode the on-chain pool account)
+async function loadRaydiumPoolInfo(): Promise<any> {
+  // This is a placeholder. Replace with an actual call to a Raydium SDK or use connection.getAccountInfo and decode.
+  // For example, you might use a library function: 
+  // const pool = await RaydiumSDK.loadPool(connection, RAYDIUM_POOL_ADDRESS, RAYDIUM_AMM_PROGRAM_ID);
+  return {}; // Return a dummy pool object for now.
+}
+
+// Function to get the current memecoin price (in USDC) from the pool info.
+// In practice, you would derive this from the pool's token balances.
+async function getCurrentPrice(): Promise<number> {
+  // Placeholder logic. Replace with proper math using pool token reserves.
+  // For example, if pool reserves yield a price of 0.01 USDC per memecoin:
+  return 0.01;
+}
+
+// Function to compute market cap of the memecoin.
+// Market cap = circulating supply * price.
+// In a real scenario, you'll need the circulating supply from your token's mint or an external oracle.
+async function getMarketCap(): Promise<number> {
+  // For demonstration, assume a fixed circulating supply.
+  const circulatingSupply = 20000000; // 20,000,000 tokens
+  const currentPrice = await getCurrentPrice();
+  return circulatingSupply * currentPrice;
+}
+
+// Function to swap USDC for memecoin (buy order) via Raydium.
+async function buyMemecoin(amountUSDC: number): Promise<string> {
+  // Placeholder: Replace with your Raydium swap call to buy memecoin.
+  // This function should call a swap function with parameters:
+  // - Amount of USDC to swap
+  // - Minimum expected memecoin output (to protect against slippage)
+  console.log(`Buying memecoin with ${amountUSDC} USDC...`);
+  // Simulate transaction signature:
+  return "buy-tx-signature";
+}
+
+// Function to swap memecoin for USDC (sell order) via Raydium.
+async function sellMemecoin(amountMeme: number): Promise<string> {
+  // Placeholder: Replace with your Raydium swap call to sell memecoin.
+  console.log(`Selling ${amountMeme} memecoin for USDC...`);
+  return "sell-tx-signature";
+}
+
+// --- MAIN BOT LOGIC --- //
+
+async function runVolumeBot() {
+  try {
+    // Load pool info (if needed for price calculations, etc.)
+    const poolInfo = await loadRaydiumPoolInfo();
+    console.log("Loaded Raydium pool info:", poolInfo);
+
+    // Get the current market cap
+    const currentMarketCap = await getMarketCap();
+    console.log(`Current Market Cap: $${currentMarketCap.toFixed(2)}`);
+
+    // Check if the market cap is below the target before trading
+    if (currentMarketCap < TARGET_MARKET_CAP) {
+      // Execute a buy order (swap USDC for memecoin)
+      const buyTx = await buyMemecoin(BUY_ORDER_USDC_AMOUNT);
+      console.log("Buy order executed. Transaction signature:", buyTx);
+
+      // Optionally, wait a few seconds/minutes between orders (simulate market volume)
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // Execute a sell order (swap memecoin for USDC)
+      const sellTx = await sellMemecoin(SELL_ORDER_MEME_AMOUNT);
+      console.log("Sell order executed. Transaction signature:", sellTx);
+    } else {
+      console.log(`Target market cap of $${TARGET_MARKET_CAP} reached or exceeded. Halting trading.`);
+      // Optionally, clear orders or exit the bot.
+      process.exit(0);
+    }
+  } catch (error) {
+    console.error("Error in volume bot execution:", error);
+  }
+}
+
+// Run the bot immediately, then repeat at an interval (e.g., every 30 seconds)
+runVolumeBot();
+setInterval(runVolumeBot, 30000);
